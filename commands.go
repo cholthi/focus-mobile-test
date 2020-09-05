@@ -14,7 +14,7 @@ func CurrencyExists(store store) func(*cli.Context) error {
 	return func(c *cli.Context) error {
 		cur := c.Args().Get(0)
 		if ok := isISO4217(cur); !ok {
-			return cli.Exit("The value passed to --currency is not valid ISO 4217 currency", INVALIDINPUT)
+			return cli.Exit("The argument passed is not valid ISO 4217 currency", INVALIDINPUT)
 		}
 		currencies, err := store.getCurrencies()
 

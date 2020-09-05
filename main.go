@@ -22,7 +22,7 @@ func main() {
 			},
 		},
 		Copyright: "(c) 2020 Cheap Stocks Inc",
-		Usage:     "AppName supported --currency `ISO 4217 Code`",
+		Usage:     "commandName supported --currency `ISO 4217 Code`",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "cacheFile, c",
@@ -32,7 +32,7 @@ func main() {
 			&cli.StringFlag{
 				Name:  "versionFile, v",
 				Value: "./modified.lock",
-				Usage: "The `FILE` to keep track of remote file changes. It must be modified outside the app",
+				Usage: "The `FILE` to keep track of remote file changes. It must not be modified outside the app",
 			},
 		},
 		Commands: []*cli.Command{

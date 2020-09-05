@@ -46,9 +46,16 @@ func run(t *testing.T, args []string) {
 	require.NoError(t, err)
 }
 
-func TestCurrencyExist(t *testing.T) {
-	args := os.Args[0:1] // Name of the program.
+func TestCurrencyIsSupported(t *testing.T) {
+	args := os.Args[0:1] // Name of the program
 	args = append(args, "supported")
 	args = append(args, "DZD")
+	run(t, args)
+}
+
+func TestCurrencyIsNotSupported(t *testing.T) {
+	args := os.Args[0:1] // Name of the program
+	args = append(args, "supported")
+	args = append(args, "USD")
 	run(t, args)
 }
