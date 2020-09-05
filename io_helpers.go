@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -44,7 +43,7 @@ func readHTTPS3File(url string, ctx context.Context) ([]byte, error) {
 		return nil, errors.Wrap(err, "Got invalid response from the http request")
 	}
 
-	var data *bytes.Buffer //zero value of this type is a valid Buffer. awesome!
+	var data *bytes.Buffer = &bytes.Buffer{} //zero value of this type is a valid Buffer. awesome!
 	_, err = io.Copy(data, resp.Body)
 
 	if err != nil {
@@ -64,7 +63,6 @@ func preFlightRequest(url string, ctx context.Context) (http.Header, error) {
 	req = req.WithContext(ctx)
 
 	resp, err := http.DefaultClient.Do(req)
-	defer resp.Body.Close()
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error with getting preflight response")
@@ -99,14 +97,14 @@ func s3FileNotModified(versionFilepath string, headers http.Header) bool {
 	remoteLen := headers.Get("Content-Length")
 	cachedLen := sdata[1]
 
-	if strings.TrimSpace(remoteLen) == strings.TrimSpace(cachedLen) && remoteTime.Equal(cachedTime) {
+	if strings.TrimLeft(remoteLen, " ") == strings.TrimLeft(cachedLen, " ") && remoteTime.Equal(cachedTime) {
 		ret = true
 	}
 
 	return ret
 }
 
-func WriteCSV(currencies []currency) error {
+func WriteCSV(w io.Writer, currencies []currency) error {
 
 	records := make([][]string, 1)
 
@@ -116,14 +114,9 @@ func WriteCSV(currencies []currency) error {
 		records = append(records, record)
 	}
 
-	fobj, err := os.OpenFile(currencyFile, os.O_RDWR|os.O_TRUNC, 0644)
+	csvEncoder := csv.NewWriter(w)
 
-	if err != nil {
-		return errors.Wrap(err, "Error opening currency file")
-	}
-	csvEncoder := csv.NewWriter(fobj)
-
-	err = csvEncoder.WriteAll(records)
+	err := csvEncoder.WriteAll(records)
 
 	if err != nil {
 		return errors.Wrap(err, "Error encoding the data to csv")
@@ -144,5 +137,5 @@ func readCSV(r io.Reader) ([]currency, error) {
 		return nil, errors.Wrap(err, "Error reading and decoding csv file")
 	}
 
-	return sliceToStruct(currencies), nil
+	return sliceToSliceStruct(currencies), nil
 }

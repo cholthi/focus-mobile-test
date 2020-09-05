@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/pkg/errors"
 )
 
-const timeoutSeconds = 10
+const timeoutSeconds = time.Second * 30
 
 type s3FileStore struct {
 	RemoteUrl   string
@@ -16,14 +19,20 @@ type s3FileStore struct {
 	VersionFile string
 }
 
+func NewFileS3Store(currencyURL, versionFile, currencyCacheFile string) *s3FileStore {
+	store := &s3FileStore{RemoteUrl: currencyURL, LocalPath: currencyCacheFile, VersionFile: versionFile}
+
+	return store
+}
+
 func (s3 *s3FileStore) getCurrencies() ([]currency, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds))
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutSeconds)
 	defer cancel()
 
 	headers, err := preFlightRequest(s3.RemoteUrl, ctx)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Unwrap(err)
 	}
 
 	if NotModified := s3FileNotModified(s3.VersionFile, headers); NotModified {
@@ -33,6 +42,11 @@ func (s3 *s3FileStore) getCurrencies() ([]currency, error) {
 			return nil, errors.Wrap(err, "Error opening csv file")
 		}
 		return readCSV(fobj)
+	}
+
+	err = s3.UpdateVersionFile(headers) //Don't forget to update our own version control file ;-)
+	if err != nil {
+		return nil, err
 	}
 
 	data, err := readHTTPS3File(s3.RemoteUrl, ctx)
@@ -46,13 +60,30 @@ func (s3 *s3FileStore) getCurrencies() ([]currency, error) {
 	if err != nil {
 		return nil, err
 	}
+	fobj, err := os.OpenFile(s3.LocalPath, os.O_RDWR|os.O_TRUNC, 0644)
 
-	err = WriteCSV(currencies) //cache the file contents locally
+	if err != nil {
+		return nil, errors.Wrap(err, "Error opening currency file")
+	}
+	err = WriteCSV(fobj, currencies) //cache the file contents locally
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error writing through the slice of currency")
 	}
 
 	return currencies, nil
+
+}
+
+func (s3 *s3FileStore) UpdateVersionFile(headers http.Header) error {
+	content := fmt.Sprintf("%s|%s", headers.Get("Last-Modified"), headers.Get("Content-Length"))
+
+	err := ioutil.WriteFile(s3.VersionFile, []byte(content), 0644)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }
