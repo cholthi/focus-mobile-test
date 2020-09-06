@@ -4,7 +4,7 @@ This repo contains code for my interview with Focus Mobile
 ### Installation
  `go get github.com/cholthi/focus-mobile-test`
 
- Please be sure your `GOPATH` env variable is set. This project does not use go modules and `go get` requires it to work.
+ Please be sure your `GOPATH` env variable is set. This project does not use go modules and `go get` requires $GOPATH to work.
 
  The above command will fetch the project to your `GOPATH/src` and install the bin to `GOPATH/bin`. Be sure those directory exit. Which they should if you're using go.
 
