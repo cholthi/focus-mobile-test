@@ -35,11 +35,16 @@ func (s3 *s3FileStore) getCurrencies() ([]currency, error) {
 		return nil, errors.Unwrap(err)
 	}
 
-	if NotModified := s3FileNotModified(s3.VersionFile, headers); NotModified {
+	NotModified, err := s3FileNotModified(s3.VersionFile, headers)
+	if err != nil {
+		return nil, err
+	}
+
+	if NotModified { //Fetch from the local cache. No network roundtrip
 		fobj, err := os.OpenFile(s3.LocalPath, os.O_RDONLY, 0644)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "Error opening csv file")
+			return nil, errors.Wrap(err, "Error opening csv cache file. Please supply the --CacheFile or -c option with a valid file path.")
 		}
 		return readCSV(fobj)
 	}

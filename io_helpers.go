@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -14,9 +15,6 @@ import (
 )
 
 const lastModifiedFormat = "Mon, 02 Jan 2006 15:04:05 MST" //http times are RFC2616
-
-var versionFile string = ""
-var currencyFile string = ""
 
 func readHTTPS3File(url string, ctx context.Context) ([]byte, error) {
 
@@ -81,16 +79,29 @@ func preFlightRequest(url string, ctx context.Context) (http.Header, error) {
 //sometimes it is a hash of the file contents or some metadata we don't care about.
 
 //This function is stateful, it reads a modified.lock file to detect file changes
-func s3FileNotModified(versionFilepath string, headers http.Header) bool {
+func s3FileNotModified(versionFilepath string, headers http.Header) (bool, error) {
 
 	var ret bool = false
 	modTime := headers.Get("Last-Modified")
 
-	remoteTime, _ := time.Parse(lastModifiedFormat, modTime) // I don't know what to do with errs here. but shd panic
+	remoteTime, err := time.Parse(lastModifiedFormat, modTime)
+	if err != nil {
+		return false, errors.Wrap(err, "Error parsing Last Modified time")
+	}
 
-	data, _ := ioutil.ReadFile(versionFilepath)
+	data, err := ioutil.ReadFile(versionFilepath)
+	if err != nil {
+		if err == os.ErrNotExist {
+			return false, errors.Wrap(err, "The version file does not exist")
+		}
+
+		return false, errors.Wrap(err, "Unknown Error oppening file. Please supply the version file with option --versionFile or -V. This file is used to track if the remote S3 file is changed")
+	}
 
 	sdata := strings.Split(string(data), "|")
+	if len(sdata) != 2 {
+		return false, nil // This is special case of first run of the command with no version saved
+	}
 
 	cachedTime, _ := time.Parse(lastModifiedFormat, sdata[0])
 
@@ -101,7 +112,7 @@ func s3FileNotModified(versionFilepath string, headers http.Header) bool {
 		ret = true
 	}
 
-	return ret
+	return ret, nil
 }
 
 func WriteCSV(w io.Writer, currencies []currency) error {

@@ -22,7 +22,7 @@ func main() {
 			},
 		},
 		Copyright: "(c) 2020 Cheap Stocks Inc",
-		Usage:     "commandName supported --currency `ISO 4217 Code`",
+		Usage:     "commandName supported  `ISO 4217 Code`",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "cacheFile, c",
@@ -30,7 +30,7 @@ func main() {
 				Usage: "The `FILE` to cache contents of the remote currency url",
 			},
 			&cli.StringFlag{
-				Name:  "versionFile, v",
+				Name:  "versionFile, V",
 				Value: "./modified.lock",
 				Usage: "The `FILE` to keep track of remote file changes. It must not be modified outside the app",
 			},
