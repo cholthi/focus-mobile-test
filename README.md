@@ -29,4 +29,5 @@ This repo contains code for my interview with Focus Mobile
    This project comes with some tests. To run, do the following.
 
    `cd $GOPATH/src/github.com/cholthi/focus-mobile-test`
+   Then run
    `go test`
